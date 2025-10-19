@@ -1,292 +1,277 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { MapPin, Plus, CheckCircle } from 'lucide-react';
-import useCartStore from '../store/cartStore';
-import useAuthStore from '../store/authStore';
-import { createOrder, getAddresses, addAddress } from '../services/api';
-import toast from 'react-hot-toast';
+import React, { useEffect, useState } from "react";
+import { collection, getDocs, addDoc, deleteDoc } from "firebase/firestore";
+import { db } from "../firebase/config";
+import { createOrder } from "../services/orderService";
+import useCartStore from "../store/cartStore";
+import useAuthStore from "../store/authStore";
 
-const Checkout = () => {
-  const navigate = useNavigate();
-  const { cart, getCartTotal, clearCart } = useCartStore();
+export default function Checkout() {
   const { user } = useAuthStore();
+  const uid = user?.uid;
+  const { cart, clearCart } = useCartStore();
+
   const [addresses, setAddresses] = useState([]);
-  const [selectedAddress, setSelectedAddress] = useState(null);
-  const [showAddressForm, setShowAddressForm] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [newAddress, setNewAddress] = useState({
-    name: '',
-    phone: '',
-    street: '',
-    city: '',
-    state: '',
-    zipCode: '',
-    country: 'USA'
-  });
+  const [selected, setSelected] = useState(null);
+  const [adding, setAdding] = useState(false);
+  const [newAddr, setNewAddr] = useState({ label: "", address: "" });
+  const [saving, setSaving] = useState(false);
+
+  // Safe cart items with fallback to empty array
+  const safeCartItems = cart || [];
+  console.log("Cart Items:", safeCartItems);
+  
+  // Calculate total safely
+  const calculateTotal = () => {
+    if (!safeCartItems.length) return 0;
+    return safeCartItems.reduce((s, it) => s + (it.price || 0) * (it.quantity || 1), 0);
+  };
 
   useEffect(() => {
-    fetchAddresses();
-  }, []);
-
-  const fetchAddresses = async () => {
-    try {
-      const data = await getAddresses(user.uid);
-      setAddresses(data);
-      if (data.length > 0) {
-        setSelectedAddress(data[0].id);
+    if (!uid) return;
+    (async () => {
+      try {
+        const snap = await getDocs(collection(db, `users/${uid}/addresses`));
+        const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        setAddresses(list);
+        if (list.length) setSelected(list[0].id);
+      } catch (error) {
+        console.error("Error fetching addresses:", error);
       }
-    } catch (error) {
-      console.error('Error fetching addresses:', error);
-    }
-  };
+    })();
+  }, [uid]);
 
-  const handleAddAddress = async (e) => {
-    e.preventDefault();
+  const handleAddAddress = async () => {
+    if (!uid) return;
+    
+    setSaving(true);
     try {
-      const addressData = {
-        ...newAddress,
-        userId: user.uid
-      };
-      await addAddress(addressData);
-      toast.success('Address added successfully!');
-      setShowAddressForm(false);
-      setNewAddress({
-        name: '',
-        phone: '',
-        street: '',
-        city: '',
-        state: '',
-        zipCode: '',
-        country: 'USA'
-      });
-      fetchAddresses();
+      const ref = await addDoc(collection(db, `users/${uid}/addresses`), newAddr);
+      setAddresses((p) => [...p, { id: ref.id, ...newAddr }]);
+      setSelected(ref.id);
+      setNewAddr({ label: "", address: "" });
+      setAdding(false);
     } catch (error) {
-      toast.error('Failed to add address');
+      console.error("Error adding address:", error);
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handlePlaceOrder = async () => {
-    if (!selectedAddress) {
-      toast.error('Please select a delivery address');
+  const handleConfirm = async () => {
+    if (!uid) return;
+    
+    // Check if cart has items
+    if (!safeCartItems.length) {
+      alert("Your cart is empty. Please add items before checkout.");
       return;
     }
 
-    setLoading(true);
+    const addr = addresses.find((a) => a.id === selected);
+    const orderPayload = {
+      items: safeCartItems,
+      address: addr || null,
+      total: calculateTotal(),
+    };
+    
+    setSaving(true);
     try {
-      const address = addresses.find(a => a.id === selectedAddress);
-      const orderData = {
-        userId: user.uid,
-        userEmail: user.email,
-        userName: user.displayName,
-        items: cart,
-        totalAmount: (getCartTotal() * 1.1).toFixed(2),
-        address: address,
-        status: 'On Process',
-        orderDate: new Date().toISOString(),
-      };
-
-      await createOrder(orderData);
+      const orderId = await createOrder(uid, orderPayload);
+      
+      // Clear user's cart from Firestore
+      try {
+        const snap = await getDocs(collection(db, `users/${uid}/cart`));
+        await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
+      } catch (error) {
+        console.error("Error clearing cart from Firestore:", error);
+      }
+      
+      // Clear local store
       clearCart();
-      toast.success('Order placed successfully!');
-      navigate('/dashboard');
+      
+      // Navigate to order history
+      window.location.href = "/dashboard/orders";
     } catch (error) {
-      toast.error('Failed to place order');
+      console.error("Error creating order:", error);
+      alert("Failed to create order. Please try again.");
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
-  if (cart.length === 0) {
-    navigate('/cart');
-    return null;
+  if (!uid) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="p-6">Please login to checkout.</div>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-8">Checkout</h1>
+    <div className="p-6 max-w-4xl mx-auto min-h-screen">
+      <h2 className="text-2xl font-semibold mb-4">Checkout</h2>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Delivery Address */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="card">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900 flex items-center space-x-2">
-                  <MapPin className="w-6 h-6" />
-                  <span>Delivery Address</span>
-                </h2>
-                <button
-                  onClick={() => setShowAddressForm(!showAddressForm)}
-                  className="btn-outline flex items-center space-x-2"
+      {/* Cart Items Summary with Images */}
+      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h3 className="font-medium text-lg mb-4">Order Summary</h3>
+        {safeCartItems.length === 0 ? (
+          <div className="text-gray-500 text-center py-8">
+            <div className="text-lg mb-2">Your cart is empty</div>
+            <p className="text-sm">Add some items to proceed with checkout</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {safeCartItems.map((item, index) => (
+              <div key={index} className="flex items-center space-x-4 border-b pb-4 last:border-b-0">
+                {/* Product Image */}
+                <div className="flex-shrink-0">
+                  <img
+                    src={item.image || item.photoURL || "/placeholder-image.jpg"}
+                    alt={item.title || item.name || "Product"}
+                    className="w-16 h-16 md:w-20 md:h-20 object-cover rounded-lg border"
+                    onError={(e) => {
+                      e.target.src = "/placeholder-image.jpg";
+                    }}
+                  />
+                </div>
+                
+                {/* Product Details */}
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-gray-900 truncate">
+                    {item.title || item.name || "Unnamed Item"}
+                  </div>
+                  <div className="text-sm text-gray-600 mt-1">
+                    <span className="font-medium">Qty:</span> {item.quantity || 1}
+                  </div>
+                  {item.description && (
+                    <div className="text-xs text-gray-500 mt-1 line-clamp-2">
+                      {item.description}
+                    </div>
+                  )}
+                </div>
+                
+                {/* Price */}
+                <div className="flex flex-col items-end">
+                  <div className="font-semibold text-gray-900">
+                    ${((item.price || 0) * (item.quantity || 1)).toFixed(2)}
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    ${(item.price || 0).toFixed(2)} each
+                  </div>
+                </div>
+              </div>
+            ))}
+            
+            {/* Total Summary */}
+            <div className="border-t pt-4 mt-4">
+              <div className="flex justify-between items-center text-lg font-semibold">
+                <span>Total:</span>
+                <span className="text-primary-600">${calculateTotal().toFixed(2)}</span>
+              </div>
+              <div className="text-sm text-gray-500 text-right mt-1">
+                {safeCartItems.length} item{safeCartItems.length !== 1 ? 's' : ''}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Shipping Address Section */}
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h3 className="font-medium text-lg mb-4">Shipping Address</h3>
+
+        {addresses.length === 0 && (
+          <div className="text-sm text-gray-500 mb-4 p-4 bg-gray-50 rounded-lg">
+            No saved addresses. Please add a shipping address below.
+          </div>
+        )}
+        
+        <div className="space-y-3">
+          {addresses.map((a) => (
+            <label key={a.id} className="flex items-start space-x-3 border rounded-lg p-4 cursor-pointer hover:bg-gray-50 transition-colors">
+              <input
+                type="radio"
+                name="addr"
+                checked={selected === a.id}
+                onChange={() => setSelected(a.id)}
+                className="mt-1 text-primary-600 focus:ring-primary-500"
+              />
+              <div className="text-sm flex-1">
+                <div className="font-medium text-gray-900">{a.label || "Address"}</div>
+                <div className="text-gray-600 mt-1 whitespace-pre-line">{a.address}</div>
+              </div>
+            </label>
+          ))}
+        </div>
+
+        {/* Add New Address */}
+        <div className="mt-6">
+          {adding ? (
+            <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
+              <h4 className="font-medium text-gray-900">Add New Address</h4>
+              <input
+                value={newAddr.label}
+                onChange={(e) => setNewAddr((s) => ({ ...s, label: e.target.value }))}
+                placeholder="Label (Home, Office, Work...)"
+                className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              />
+              <textarea
+                value={newAddr.address}
+                onChange={(e) => setNewAddr((s) => ({ ...s, address: e.target.value }))}
+                placeholder="Full shipping address including street, city, state, and zip code"
+                className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                rows={4}
+              />
+              <div className="flex gap-3">
+                <button 
+                  onClick={handleAddAddress} 
+                  disabled={saving || !newAddr.label.trim() || !newAddr.address.trim()} 
+                  className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed px-6"
                 >
-                  <Plus className="w-5 h-5" />
-                  <span>Add New</span>
+                  {saving ? "Saving..." : "Save Address"}
+                </button>
+                <button 
+                  onClick={() => setAdding(false)} 
+                  className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
                 </button>
               </div>
-
-              {/* Address Form */}
-              {showAddressForm && (
-                <form onSubmit={handleAddAddress} className="mb-6 p-4 bg-gray-50 rounded-lg space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <input
-                      type="text"
-                      placeholder="Full Name"
-                      value={newAddress.name}
-                      onChange={(e) => setNewAddress({ ...newAddress, name: e.target.value })}
-                      className="input-field"
-                      required
-                    />
-                    <input
-                      type="tel"
-                      placeholder="Phone Number"
-                      value={newAddress.phone}
-                      onChange={(e) => setNewAddress({ ...newAddress, phone: e.target.value })}
-                      className="input-field"
-                      required
-                    />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Street Address"
-                    value={newAddress.street}
-                    onChange={(e) => setNewAddress({ ...newAddress, street: e.target.value })}
-                    className="input-field"
-                    required
-                  />
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <input
-                      type="text"
-                      placeholder="City"
-                      value={newAddress.city}
-                      onChange={(e) => setNewAddress({ ...newAddress, city: e.target.value })}
-                      className="input-field"
-                      required
-                    />
-                    <input
-                      type="text"
-                      placeholder="State"
-                      value={newAddress.state}
-                      onChange={(e) => setNewAddress({ ...newAddress, state: e.target.value })}
-                      className="input-field"
-                      required
-                    />
-                    <input
-                      type="text"
-                      placeholder="ZIP Code"
-                      value={newAddress.zipCode}
-                      onChange={(e) => setNewAddress({ ...newAddress, zipCode: e.target.value })}
-                      className="input-field"
-                      required
-                    />
-                  </div>
-                  <div className="flex space-x-3">
-                    <button type="submit" className="btn-primary">
-                      Save Address
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowAddressForm(false)}
-                      className="btn-secondary"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </form>
-              )}
-
-              {/* Saved Addresses */}
-              <div className="space-y-3">
-                {addresses.length === 0 ? (
-                  <p className="text-gray-600 text-center py-8">No saved addresses. Please add one.</p>
-                ) : (
-                  addresses.map((address) => (
-                    <label
-                      key={address.id}
-                      className={`block p-4 rounded-lg border-2 cursor-pointer transition ${
-                        selectedAddress === address.id
-                          ? 'border-primary-600 bg-primary-50'
-                          : 'border-gray-200 hover:border-primary-300'
-                      }`}
-                    >
-                      <div className="flex items-start space-x-3">
-                        <input
-                          type="radio"
-                          name="address"
-                          value={address.id}
-                          checked={selectedAddress === address.id}
-                          onChange={() => setSelectedAddress(address.id)}
-                          className="mt-1"
-                        />
-                        <div className="flex-1">
-                          <div className="font-semibold text-gray-900">{address.name}</div>
-                          <div className="text-sm text-gray-600 mt-1">
-                            <p>{address.street}</p>
-                            <p>{address.city}, {address.state} {address.zipCode}</p>
-                            <p>{address.country}</p>
-                            <p className="mt-1">Phone: {address.phone}</p>
-                          </div>
-                        </div>
-                        {selectedAddress === address.id && (
-                          <CheckCircle className="w-6 h-6 text-primary-600" />
-                        )}
-                      </div>
-                    </label>
-                  ))
-                )}
-              </div>
             </div>
+          ) : (
+            <button 
+              onClick={() => setAdding(true)} 
+              className="w-full md:w-auto px-6 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors text-gray-600 hover:text-primary-600"
+            >
+              + Add New Address
+            </button>
+          )}
+        </div>
+
+        {/* Checkout Action */}
+        <div className="mt-8 border-t pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="text-center sm:text-left">
+            <div className="text-sm text-gray-500">Order Total</div>
+            <div className="text-2xl font-bold text-primary-600">${calculateTotal().toFixed(2)}</div>
           </div>
 
-          {/* Order Summary */}
-          <div className="lg:col-span-1">
-            <div className="card sticky top-24">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Order Summary</h2>
-              
-              <div className="space-y-3 mb-6">
-                {cart.map((item) => (
-                  <div key={item.id} className="flex justify-between text-sm">
-                    <span className="text-gray-600">{item.title} x {item.quantity}</span>
-                    <span className="font-semibold">${(item.price * item.quantity).toFixed(2)}</span>
-                  </div>
-                ))}
+          <button 
+            onClick={handleConfirm} 
+            disabled={saving || safeCartItems.length === 0 || addresses.length === 0}
+            className="btn-primary px-8 py-4 text-lg disabled:opacity-50 disabled:cursor-not-allowed min-w-[200px]"
+          >
+            {saving ? (
+              <div className="flex items-center justify-center space-x-2">
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Processing...</span>
               </div>
-
-              <div className="space-y-3 mb-6 border-t pt-4">
-                <div className="flex justify-between text-gray-600">
-                  <span>Subtotal</span>
-                  <span>${getCartTotal().toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-gray-600">
-                  <span>Shipping</span>
-                  <span>Free</span>
-                </div>
-                <div className="flex justify-between text-gray-600">
-                  <span>Tax</span>
-                  <span>${(getCartTotal() * 0.1).toFixed(2)}</span>
-                </div>
-                <div className="border-t pt-3 flex justify-between text-xl font-bold">
-                  <span>Total</span>
-                  <span>${(getCartTotal() * 1.1).toFixed(2)}</span>
-                </div>
-              </div>
-
-              <button
-                onClick={handlePlaceOrder}
-                disabled={loading || !selectedAddress}
-                className="w-full btn-primary py-3 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? 'Processing...' : 'Place Order'}
-              </button>
-
-              <p className="text-xs text-gray-500 text-center mt-4">
-                Payment gateway integration is simulated for this demo
-              </p>
-            </div>
-          </div>
+            ) : (
+              "Confirm Order"
+            )}
+          </button>
         </div>
       </div>
     </div>
   );
-};
-
-export default Checkout;
+}

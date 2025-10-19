@@ -1,61 +1,96 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
+import { 
+  signInWithPopup, 
+  signInWithRedirect, 
+  getRedirectResult,
+  onAuthStateChanged,
+  signOut 
+} from "firebase/auth";
+import { auth, googleProvider, hasValidConfig } from "../firebase/config";
 
-// Check if Firebase config is available
-const hasFirebaseConfig = import.meta.env.VITE_FIREBASE_API_KEY && 
-                          import.meta.env.VITE_FIREBASE_API_KEY !== 'your_api_key_here';
-
-const firebaseConfig = hasFirebaseConfig ? {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
-} : null;
-
-let auth = null;
-let googleProvider = null;
-
-if (hasFirebaseConfig) {
-  const app = initializeApp(firebaseConfig);
-  auth = getAuth(app);
-  googleProvider = new GoogleAuthProvider();
-}
-
-export { auth, googleProvider };
+// Demo mode fallback
+const isDemoMode = !hasValidConfig;
 
 export const signInWithGoogle = async () => {
-  if (!hasFirebaseConfig) {
-    // Demo mode - simulate login
-    console.warn('Firebase not configured. Using demo mode.');
-    return {
-      uid: 'demo-user-' + Date.now(),
-      email: 'demo@shophub.com',
+  if (isDemoMode) {
+    // Demo mode implementation
+    const demoUser = {
+      uid: 'demo-uid',
       displayName: 'Demo User',
-      photoURL: 'https://api.dicebear.com/7.x/avataaars/svg?seed=demo'
+      email: 'demo@example.com',
+      photoURL: null
     };
+    return demoUser;
   }
 
   try {
     const result = await signInWithPopup(auth, googleProvider);
     return result.user;
   } catch (error) {
-    console.error('Error signing in with Google:', error);
+    console.error("Popup sign-in error:", error);
+    
+    // If popup fails due to COOP policy, throw specific error
+    if (error.code === 'auth/popup-blocked' || 
+        error.message?.includes('Cross-Origin-Opener-Policy')) {
+      throw new Error('POPUP_BLOCKED');
+    }
     throw error;
   }
 };
 
-export const logout = async () => {
-  if (!hasFirebaseConfig) {
-    console.log('Demo mode logout');
-    return;
+export const signInWithGoogleRedirect = async () => {
+  if (isDemoMode) {
+    // For demo, just return a demo user
+    const demoUser = {
+      uid: 'demo-uid',
+      displayName: 'Demo User',
+      email: 'demo@example.com',
+      photoURL: null
+    };
+    return demoUser;
   }
 
   try {
-    await signOut(auth);
+    await signInWithRedirect(auth, googleProvider);
+    // The redirect will happen, no return value needed
   } catch (error) {
-    console.error('Error signing out:', error);
+    console.error("Redirect sign-in error:", error);
     throw error;
   }
 };
+
+export const getRedirectResultAuth = async () => {
+  if (isDemoMode) return null;
+  
+  try {
+    const result = await getRedirectResult(auth);
+    return result;
+  } catch (error) {
+    console.error("Redirect result error:", error);
+    throw error;
+  }
+};
+
+export const onAuthChange = (callback) => {
+  if (isDemoMode) {
+    // Demo mode: immediately call with null
+    callback(null);
+    return () => {}; // No-op unsubscribe
+  }
+  
+  return onAuthStateChanged(auth, callback);
+};
+
+export const logout = async () => {
+  if (isDemoMode) {
+    return; // No-op for demo
+  }
+  
+  try {
+    await signOut(auth);
+  } catch (error) {
+    console.error("Logout error:", error);
+    throw error;
+  }
+};
+
+export { isDemoMode };

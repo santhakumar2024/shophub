@@ -15,6 +15,7 @@ const ProductCard = ({ product }) => {
       return;
     }
     addToCart(product);
+    console.log(product);
   };
 
   const handleAddToWishlist = (e) => {
