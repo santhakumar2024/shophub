@@ -1,0 +1,223 @@
+{
+  "products": [
+    {
+      "id": 1,
+      "title": "Premium Wireless Headphones",
+      "price": 299.99,
+      "description": "High-quality wireless headphones with active noise cancellation, 30-hour battery life, and premium sound quality.",
+      "category": "Electronics",
+      "image": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&h=500&fit=crop",
+      "stock": 45,
+      "rating": 4.8,
+      "reviews": 234
+    },
+    {
+      "id": 2,
+      "title": "Smart Watch Pro",
+      "price": 399.99,
+      "description": "Advanced smartwatch with health tracking, GPS, and 5-day battery life. Perfect for fitness enthusiasts.",
+      "category": "Electronics",
+      "image": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&h=500&fit=crop",
+      "stock": 0,
+      "rating": 4.6,
+      "reviews": 189
+    },
+    {
+      "id": 3,
+      "title": "Designer Leather Backpack",
+      "price": 159.99,
+      "description": "Handcrafted genuine leather backpack with laptop compartment. Stylish and durable.",
+      "category": "Fashion",
+      "image": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=500&h=500&fit=crop",
+      "stock": 28,
+      "rating": 4.7,
+      "reviews": 156
+    },
+    {
+      "id": 4,
+      "title": "Organic Cotton T-Shirt",
+      "price": 29.99,
+      "description": "Sustainable and comfortable 100% organic cotton t-shirt. Available in multiple colors.",
+      "category": "Fashion",
+      "image": "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=500&h=500&fit=crop",
+      "stock": 150,
+      "rating": 4.5,
+      "reviews": 432
+    },
+    {
+      "id": 5,
+      "title": "4K Ultra HD Camera",
+      "price": 899.99,
+      "description": "Professional mirrorless camera with 4K video recording, fast autofocus, and weather-sealed body.",
+      "category": "Electronics",
+      "image": "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=500&h=500&fit=crop",
+      "stock": 12,
+      "rating": 4.9,
+      "reviews": 98
+    },
+    {
+      "id": 6,
+      "title": "Yoga Mat Premium",
+      "price": 49.99,
+      "description": "Non-slip eco-friendly yoga mat with extra cushioning. Perfect for all types of yoga and exercise.",
+      "category": "Sports",
+      "image": "https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?w=500&h=500&fit=crop",
+      "stock": 67,
+      "rating": 4.6,
+      "reviews": 287
+    },
+    {
+      "id": 7,
+      "title": "Stainless Steel Water Bottle",
+      "price": 24.99,
+      "description": "Insulated water bottle keeps drinks cold for 24 hours or hot for 12 hours. BPA-free.",
+      "category": "Sports",
+      "image": "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=500&h=500&fit=crop",
+      "stock": 0,
+      "rating": 4.7,
+      "reviews": 521
+    },
+    {
+      "id": 8,
+      "title": "Minimalist Desk Lamp",
+      "price": 79.99,
+      "description": "Modern LED desk lamp with adjustable brightness and color temperature. USB charging port included.",
+      "category": "Home",
+      "image": "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=500&h=500&fit=crop",
+      "stock": 34,
+      "rating": 4.4,
+      "reviews": 167
+    },
+    {
+      "id": 9,
+      "title": "Mechanical Gaming Keyboard",
+      "price": 149.99,
+      "description": "RGB backlit mechanical keyboard with customizable keys. Perfect for gaming and typing.",
+      "category": "Electronics",
+      "image": "https://images.unsplash.com/photo-1595225476474-87563907a212?w=500&h=500&fit=crop",
+      "stock": 23,
+      "rating": 4.8,
+      "reviews": 345
+    },
+    {
+      "id": 10,
+      "title": "Ceramic Plant Pot Set",
+      "price": 39.99,
+      "description": "Set of 3 modern ceramic plant pots with drainage holes. Perfect for indoor plants.",
+      "category": "Home",
+      "image": "https://images.unsplash.com/photo-1485955900006-10f4d324d411?w=500&h=500&fit=crop",
+      "stock": 89,
+      "rating": 4.5,
+      "reviews": 213
+    },
+    {
+      "id": 11,
+      "title": "Running Shoes Elite",
+      "price": 129.99,
+      "description": "Lightweight running shoes with advanced cushioning and breathable mesh. Ideal for long-distance running.",
+      "category": "Sports",
+      "image": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&h=500&fit=crop",
+      "stock": 56,
+      "rating": 4.9,
+      "reviews": 678
+    },
+    {
+      "id": 12,
+      "title": "Bluetooth Speaker Portable",
+      "price": 89.99,
+      "description": "Waterproof portable speaker with 360-degree sound and 20-hour battery life.",
+      "category": "Electronics",
+      "image": "https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=500&h=500&fit=crop",
+      "stock": 41,
+      "rating": 4.6,
+      "reviews": 289
+    }
+  ],
+  "categories": [
+    {
+      "id": 1,
+      "name": "Electronics",
+      "slug": "electronics",
+      "image": "https://images.unsplash.com/photo-1498049794561-7780e7231661?w=300&h=200&fit=crop"
+    },
+    {
+      "id": 2,
+      "name": "Fashion",
+      "slug": "fashion",
+      "image": "https://images.unsplash.com/photo-1445205170230-053b83016050?w=300&h=200&fit=crop"
+    },
+    {
+      "id": 3,
+      "name": "Sports",
+      "slug": "sports",
+      "image": "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=300&h=200&fit=crop"
+    },
+    {
+      "id": 4,
+      "name": "Home",
+      "slug": "home",
+      "image": "https://images.unsplash.com/photo-1484101403633-562f891dc89a?w=300&h=200&fit=crop"
+    }
+  ],
+  "orders": [
+    {
+      "userId": "iA7C2ENSukW47HPEKseY8lb75Ue2",
+      "userEmail": "santhakumar8308@gmail.com",
+      "userName": "Santha Kumar",
+      "items": [
+        {
+          "id": 1,
+          "title": "Premium Wireless Headphones",
+          "price": 299.99,
+          "description": "High-quality wireless headphones with active noise cancellation, 30-hour battery life, and premium sound quality.",
+          "category": "Electronics",
+          "image": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&h=500&fit=crop",
+          "stock": 45,
+          "rating": 4.8,
+          "reviews": 234,
+          "quantity": 3
+        },
+        {
+          "id": 3,
+          "title": "Designer Leather Backpack",
+          "price": 159.99,
+          "description": "Handcrafted genuine leather backpack with laptop compartment. Stylish and durable.",
+          "category": "Fashion",
+          "image": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=500&h=500&fit=crop",
+          "stock": 28,
+          "rating": 4.7,
+          "reviews": 156,
+          "quantity": 3
+        }
+      ],
+      "totalAmount": "1517.93",
+      "address": {
+        "name": "santhakumar JS",
+        "phone": "07550110401",
+        "street": "sadhasivam nagar,madipakkam",
+        "city": "chennai",
+        "state": "Tamil Nadu",
+        "zipCode": "600091",
+        "country": "USA",
+        "userId": "iA7C2ENSukW47HPEKseY8lb75Ue2",
+        "id": 1
+      },
+      "status": "On Process",
+      "orderDate": "2025-10-19T11:09:17.381Z",
+      "id": 1
+    }
+  ],
+  "addresses": [
+    {
+      "name": "santhakumar JS",
+      "phone": "07550110401",
+      "street": "sadhasivam nagar,madipakkam",
+      "city": "chennai",
+      "state": "Tamil Nadu",
+      "zipCode": "600091",
+      "country": "USA",
+      "userId": "iA7C2ENSukW47HPEKseY8lb75Ue2",
+      "id": 1
+    }
+  ]
+}
